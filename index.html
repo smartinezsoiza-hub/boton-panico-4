@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicación de Auxilio - Flor Hibisco</title>
+    <style>
+        /* Estilos visuales de alta visibilidad y modo oscuro discreto */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h2, h3 {
+            color: #FF1493; /* Rosa fosforescente para resaltar */
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #bbbbbb;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            border-color: #FF1493;
+            outline: none;
+        }
+
+        /* Indicador de GPS */
+        .gps-box {
+            background-color: #2a2a2a;
+            border-left: 5px solid #39FF14; /* Verde fosforescente */
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 3px;
+        }
+
+        .gps-data {
+            font-family: monospace;
+            color: #39FF14;
+            font-size: 14px;
+        }
+
+        /* Botones */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-submit {
+            background-color: #FF1493;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: #ff4da6;
+        }
+
+        .status-message {
+            text-align: center;
+            color: #39FF14;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Registro de Seguridad</h2>
+        
+        <div class="section">
+            <h3>Información de la Participante</h3>
+            
+            <div class="form-group">
+                <label for="nombre">Nombre Completo:</label>
+                <input type="text" id="nombre" placeholder="Escriba su nombre completo">
+            </div>
+
+            <div class="form-group">
+                <label for="direccion">Dirección Física:</label>
+                <input type="text" id="direccion" placeholder="Ej. Calle, Número, Pueblo">
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label for="peso">Peso (libras):</label>
+                    <input type="number" id="peso" placeholder="Ej. 130">
+                </div>
+                <div style="flex: 1;">
+                    <label for="estatura">Estatura:</label>
+                    <input type="text" id="estatura" placeholder="Ej. 5'4\"">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Localización GPS (Tiempo Real):</label>
+                <div class="gps-box">
+                    <div id="gps-status" class="gps-data">Buscando señal satelital...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Información del Familiar de Contacto</h3>
+            
+            <div class="form-group">
+                <label for="nombre-familiar">Nombre del Familiar:</label>
+                <input type="text" id="nombre-familiar" placeholder="Nombre de la persona de confianza">
+            </div>
+
+            <div class="form-group">
+                <label for="direccion-familiar">Dirección Física del Familiar:</label>
+                <input type="text" id="direccion-familiar" placeholder="Dirección del familiar">
+            </div>
+        </div>
+
+        <button class="btn btn-submit" onclick="guardarInformacion()">Guardar Datos de Emergencia</button>
+        <div id="msg-exito" class="status-message">¡Información guardada de forma segura en este equipo!</div>
+
+    </div>
+
+    <script>
+        // Función para activar el rastreo del GPS en tiempo real de manera continua
+        function activarRastreoGPS() {
+            const gpsStatus = document.getElementById('gps-status');
+
+            if ("geolocation" in navigator) {
+                // watchPosition actualiza automáticamente las coordenadas si la persona se mueve
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        const latitud = position.coords.latitude;
+                        const longitud = position.coords.longitude;
+                        const precision = position.coords.accuracy;
+                        
+                        gpsStatus.innerHTML = `LAT: ${latitud.toFixed(6)} <br> LNG: ${longitud.toFixed(6)} <br> <span style="color:#aaa; font-size:11px;">Precisión: ±${Math.round(precision)} metros</span>`;
+                        
+                        // Guardar temporalmente las coordenadas actuales en el navegador
+                        localStorage.setItem('actual_latitud', latitud);
+                        localStorage.setItem('actual_longitud', longitud);
+                    },
+                    (error) => {
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                gpsStatus.innerHTML = "<span style='color:red;'>Permiso denegado por el usuario.</span>";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                gpsStatus.innerHTML = "<span style='color:red;'>Posición GPS no disponible.</span>";
+                                break;
+                            case error.TIMEOUT:
+                                gpsStatus.innerHTML = "<span style='color:red;'>Tiempo de espera agotado.</span>";
+                                break;
+                        }
+                    },
+                    {
+                        enableHighAccuracy: true, // Forzar uso de GPS de alta precisión
+                        maximumAge: 0,
+                        timeout: 10000
+                    }
+                );
+            } else {
+                gpsStatus.innerHTML = "<span style='color:red;'>Tu navegador no soporta GPS nativo.</span>";
+            }
+        }
+
+        // Función para guardar los datos en la memoria interna del navegador (LocalStorage)
+        function guardarInformacion() {
+            const datos = {
+                nombre: document.getElementById('nombre').value,
+                direccion: document.getElementById('direccion').value,
+                peso: document.getElementById('peso').value,
+                estatura: document.getElementById('estatura').value,
+                familiarNombre: document.getElementById('nombre-familiar').value,
+                familiarDireccion: document.getElementById('direccion-familiar').value
+            };
+
+            // Guardar uno a uno en la memoria del navegador
+            localStorage.setItem('p_nombre', datos.nombre);
+            localStorage.setItem('p_direccion', datos.direccion);
+            localStorage.setItem('p_peso', datos.peso);
+            localStorage.setItem('p_estatura', datos.estatura);
+            localStorage.setItem('p_familiar_nombre', datos.familiarNombre);
+            localStorage.setItem('p_familiar_direccion', datos.familiarDireccion);
+
+            // Mostrar aviso visual de éxito
+            const msg = document.getElementById('msg-exito');
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 4000);
+        }
+
+        // Cargar automáticamente los datos si ya fueron rellenados antes
+        window.onload = function() {
+            if(localStorage.getItem('p_nombre')) document.getElementById('nombre').value = localStorage.getItem('p_nombre');
+            if(localStorage.getItem('p_direccion')) document.getElementById('direccion').value = localStorage.getItem('p_direccion');
+            if(localStorage.getItem('p_peso')) document.getElementById('peso').value = localStorage.getItem('p_peso');
+            if(localStorage.getItem('p_estatura')) document.getElementById('estatura').value = localStorage.getItem('p_estatura');
+            if(localStorage.getItem('p_familiar_nombre')) document.getElementById('nombre-familiar').value = localStorage.getItem('p_familiar_nombre');
+            if(localStorage.getItem('p_familiar_direccion')) document.getElementById('direccion-familiar').value = localStorage.getItem('p_familiar_direccion');
+            
+            // Inicializar el sistema de geolocalización de inmediato
+            activarRastreoGPS();
+        };
+    </script>
+</body>
+</html>
